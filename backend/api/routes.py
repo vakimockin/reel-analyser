@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -22,6 +23,7 @@ from services.reel_helpers import pairs_for_ai, reel_meta_from_record
 from services.telegram_notify import send_run_notification
 
 router = APIRouter(prefix="/api/v1", tags=["analysis"])
+logger = logging.getLogger("api.routes")
 
 
 def _sorted_full_metas(reels: list[ReelRecord]) -> list[ReelMeta]:
@@ -123,7 +125,7 @@ async def analyze_reels(
             await send_run_notification(response)
         except Exception:
             # Notification failures should not break API flow.
-            pass
+            logger.exception("Failed to send Telegram notification for run_id=%s", run.id)
         return response
 
     for reel in viral_reels:
@@ -196,7 +198,7 @@ async def analyze_reels(
         await send_run_notification(response)
     except Exception:
         # Notification failures should not break API flow.
-        pass
+        logger.exception("Failed to send Telegram notification for run_id=%s", run.id)
     return response
 
 

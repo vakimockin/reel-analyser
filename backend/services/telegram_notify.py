@@ -1,8 +1,11 @@
+import logging
 import os
 
 import httpx
 
 from core.schemas import AnalysisResponse
+
+logger = logging.getLogger("telegram_notify")
 
 
 def _bot_token() -> str:
@@ -44,6 +47,7 @@ def _build_message(result: AnalysisResponse) -> str:
 async def send_run_notification(result: AnalysisResponse) -> None:
     """Send a non-blocking-safe Telegram notification for a completed run."""
     if not _is_enabled():
+        logger.info("Telegram notification skipped: TG_BOT_TOKEN or TG_CHAT_ID is missing")
         return
 
     url = f"https://api.telegram.org/bot{_bot_token()}/sendMessage"
@@ -54,4 +58,10 @@ async def send_run_notification(result: AnalysisResponse) -> None:
     }
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.post(url, json=payload)
+        if response.is_error:
+            logger.warning(
+                "Telegram sendMessage failed: status=%s, body=%s",
+                response.status_code,
+                response.text,
+            )
         response.raise_for_status()
