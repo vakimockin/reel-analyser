@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from "react";
 
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL ||
-  (window.location.port === "3000"
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : "")
-).replace(/\/$/, "");
+function resolveApiBase() {
+  const explicit = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (explicit) {
+    return explicit.replace(/\/$/, "");
+  }
+
+  // Local dev fallback.
+  if (window.location.port === "3000") {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+
+  // Render fallback: map frontend service URL to API service URL.
+  // Example: reel-analyser-frontend.onrender.com -> reel-analyser-api.onrender.com
+  const host = window.location.hostname;
+  if (host.endsWith(".onrender.com") && host.includes("-frontend")) {
+    return `${window.location.protocol}//${host.replace("-frontend", "-api")}`;
+  }
+
+  return "";
+}
+
+const API_BASE = resolveApiBase();
 
 function normalizeUsernames(input) {
   return input
