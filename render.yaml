@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: reel-analyser-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reel-analyser-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: APIFY_TOKEN
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: CORS_ORIGINS
+        sync: false
+      - key: AI_MAX_REELS
+        value: "15"
+      - key: OPENAI_FRAMES_PER_REEL
+        value: "6"
+      - key: AI_THUMBNAIL_ONLY
+        value: "false"
+      - key: AI_NICHE_SUMMARY_ENABLED
+        value: "true"
+      - key: OPENAI_SUMMARY_MODEL
+        value: gpt-4o-mini
+      - key: TG_BOT_TOKEN
+        sync: false
+      - key: TG_CHAT_ID
+        sync: false
+
+  - type: worker
+    name: reel-analyser-bot
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python -m bot.main
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reel-analyser-db
+          property: connectionString
+      - key: BACKEND_BASE_URL
+        fromService:
+          type: web
+          name: reel-analyser-api
+          property: url
+      - key: TG_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_ALLOWED_CHAT_IDS
+        sync: false
+
+  - type: web
+    name: reel-analyser-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+
+databases:
+  - name: reel-analyser-db
+    plan: free

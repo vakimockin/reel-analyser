@@ -74,3 +74,35 @@ Base path: `/api/v1`
   - `/run <id>` for run details
 - Automatic Telegram notification is sent after each `/api/v1/analyze` run when
   `TG_BOT_TOKEN` and `TG_CHAT_ID` are set.
+
+## Deploy on Render
+
+Repository includes a ready Blueprint config: `render.yaml`.
+
+### Services created by Blueprint
+
+- `reel-analyser-api` (FastAPI web service)
+- `reel-analyser-frontend` (static site, Vite build)
+- `reel-analyser-bot` (Telegram worker)
+- `reel-analyser-db` (Postgres)
+
+### Deploy steps
+
+1. Push project to GitHub/GitLab.
+2. In Render: **New +** -> **Blueprint** -> select your repository.
+3. Review `render.yaml` and create the stack.
+4. Fill required environment variables:
+   - `OPENAI_API_KEY`
+   - `APIFY_TOKEN`
+   - `CORS_ORIGINS` (set to your frontend URL, e.g. `https://reel-analyser-frontend.onrender.com`)
+   - `VITE_API_BASE_URL` (set to backend URL, e.g. `https://reel-analyser-api.onrender.com`)
+   - `TG_BOT_TOKEN` (required only if bot/notifications are used)
+   - `TG_CHAT_ID` (required only for automatic notifications from API)
+5. Trigger deploy for all services (or wait for auto-deploy).
+
+### Notes for Render
+
+- Backend start command runs DB migrations automatically:
+  `alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}`.
+- Frontend calls backend using `VITE_API_BASE_URL`.
+- If Telegram bot is not needed, you can disable or remove the worker service.

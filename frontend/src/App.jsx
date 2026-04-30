@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 
-const API_BASE =
-  window.location.port === "3000"
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (window.location.port === "3000"
     ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : "";
+    : "")
+).replace(/\/$/, "");
 
 function normalizeUsernames(input) {
   return input
